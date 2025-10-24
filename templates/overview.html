@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - ExTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .glassmorphism-dark {
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .gradient-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .gradient-warning {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .card-modern {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-modern:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .category-icon-modern {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .chart-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 500px;
+            overflow-y: auto;
+        }
+        
+        .chart-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .category-breakdown-container {
+            height: 500px;
+            overflow-y: auto;
+        }
+        
+        .category-breakdown-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .category-breakdown-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        
+        .category-breakdown-container::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 3px;
+        }
+        
+        .category-breakdown-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.5);
+        }
+        
+        .category-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .category-item:hover {
+            transform: translateX(8px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+        }
+        
+        .table-modern {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .table-modern th {
+            background: rgba(102, 126, 234, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .table-modern tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .floating-circle:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .floating-circle:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 60%;
+            right: 5%;
+            animation-delay: 3s;
+        }
+        
+        .floating-circle:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            bottom: 10%;
+            left: 10%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen relative" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3b82f6 100%); background-attachment: fixed;">
+    <!-- Floating Background Elements -->
+    <div class="floating-elements">
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+    </div>
+    
+    <!-- Navigation Header -->
+    <nav class="nav-glass shadow-2xl relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Left side - User Info -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div class="text-white">
+                            <p class="text-sm font-medium">{{ user.username }}</p>
+                            <p class="text-xs text-white text-opacity-70">Analytics Dashboard</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center - Branding -->
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard' %}" class="flex items-center hover:opacity-80 transition duration-300 group">
+                        <div class="w-12 h-12 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-wallet text-white text-xl"></i>
+                        </div>
+                        <h1 class="text-white text-2xl font-bold tracking-tight">ExTrack</h1>
+                    </a>
+                </div>
+                
+                <!-- Right side - Navigation & Actions -->
+                <div class="flex items-center space-x-6">
+                    <a href="{% url 'overview' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
+                        <i class="fas fa-chart-pie mr-2"></i>Analytics
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-list mr-2"></i>Expenses
+                    </a>
+                    <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 shadow-lg">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+        <!-- Page Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-white mb-4">Analytics Dashboard</h1>
+            <p class="text-white text-opacity-80 text-lg">Insights into your spending patterns and financial trends</p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <div class="stats-card rounded-3xl p-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-2">Total Spent</p>
+                        <p class="text-3xl font-bold text-gradient">₹{{ total_amount|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-500 mt-1">All time</p>
+                    </div>
+                    <div class="category-icon-modern gradient-primary">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card rounded-3xl p-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-2">Total Expenses</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ expense_count }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Transactions</p>
+                    </div>
+                    <div class="category-icon-modern gradient-success">
+                        <i class="fas fa-list"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card rounded-3xl p-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-2">Categories</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ category_totals|length }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Active</p>
+                    </div>
+                    <div class="category-icon-modern gradient-warning">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card rounded-3xl p-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 mb-2">Average</p>
+                        <p class="text-3xl font-bold text-gray-900">₹{{ average_amount|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Per transaction</p>
+                    </div>
+                    <div class="category-icon-modern gradient-secondary">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <!-- Category Breakdown Chart -->
+            <div class="chart-container rounded-3xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900">Expenses by Category</h3>
+                    <div class="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center">
+                        <i class="fas fa-chart-pie text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="h-80 overflow-hidden">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Category List -->
+            <div class="chart-container rounded-3xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900">Category Breakdown</h3>
+                    <div class="w-12 h-12 rounded-2xl gradient-success flex items-center justify-center">
+                        <i class="fas fa-list text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="category-breakdown-container">
+                    <div class="space-y-4">
+                    {% for category, amount, percentage in category_list %}
+                        <div class="category-item rounded-2xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="category-icon-modern mr-4
+                                        {% if category == 'food' %}gradient-success
+                                        {% elif category == 'rent' %}gradient-primary
+                                        {% elif category == 'transport' %}gradient-warning
+                                        {% elif category == 'entertainment' %}gradient-secondary
+                                        {% elif category == 'healthcare' %}bg-red-500
+                                        {% elif category == 'shopping' %}bg-pink-500
+                                        {% elif category == 'utilities' %}bg-indigo-500
+                                        {% elif category == 'education' %}bg-orange-500
+                                        {% else %}bg-gray-500{% endif %}">
+                                        {% if category == 'food' %}<i class="fas fa-utensils"></i>
+                                        {% elif category == 'rent' %}<i class="fas fa-home"></i>
+                                        {% elif category == 'transport' %}<i class="fas fa-car"></i>
+                                        {% elif category == 'entertainment' %}<i class="fas fa-film"></i>
+                                        {% elif category == 'healthcare' %}<i class="fas fa-heartbeat"></i>
+                                        {% elif category == 'shopping' %}<i class="fas fa-shopping-bag"></i>
+                                        {% elif category == 'utilities' %}<i class="fas fa-bolt"></i>
+                                        {% elif category == 'education' %}<i class="fas fa-book"></i>
+                                        {% else %}<i class="fas fa-tag"></i>{% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-gray-900 text-lg">{{ category|title }}</p>
+                                        <p class="text-sm text-gray-600">{{ percentage|floatformat:1 }}% of total</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-gray-900 text-xl">₹{{ amount|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-12">
+                            <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                <i class="fas fa-chart-pie text-4xl text-gradient"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">No data available</h3>
+                            <p class="text-gray-600">Start adding expenses to see your spending breakdown</p>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div class="table-modern rounded-3xl p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Recent Expenses</h3>
+                <div class="w-12 h-12 rounded-2xl gradient-warning flex items-center justify-center">
+                    <i class="fas fa-clock text-white text-xl"></i>
+                </div>
+            </div>
+            {% if recent_expenses %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for expense in recent_expenses %}
+                                <tr class="hover:bg-gray-50 transition-all duration-200">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ expense.title }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                            {% if expense.category == 'food' %}bg-green-100 text-green-800
+                                            {% elif expense.category == 'rent' %}bg-blue-100 text-blue-800
+                                            {% elif expense.category == 'transport' %}bg-yellow-100 text-yellow-800
+                                            {% elif expense.category == 'entertainment' %}bg-purple-100 text-purple-800
+                                            {% elif expense.category == 'healthcare' %}bg-red-100 text-red-800
+                                            {% elif expense.category == 'shopping' %}bg-pink-100 text-pink-800
+                                            {% elif expense.category == 'utilities' %}bg-indigo-100 text-indigo-800
+                                            {% elif expense.category == 'education' %}bg-orange-100 text-orange-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ expense.get_category_display }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">₹{{ expense.amount }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ expense.date }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <i class="fas fa-receipt text-4xl text-gradient"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">No recent expenses</h3>
+                    <p class="text-gray-600">Your recent transactions will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Category Chart with modern styling
+        const categoryData = {
+            {% for category, amount in category_amounts.items %}
+                "{{ category }}": {{ amount }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+        
+        const categoryLabels = Object.keys(categoryData).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1));
+        const categoryValues = Object.values(categoryData);
+        
+        // Modern gradient colors
+        const categoryColors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+            'linear-gradient(135deg, #ff8a80 0%, #ffab91 100%)',
+            'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)'
+        ];
+
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        // Create gradient for each segment
+        const gradients = categoryColors.slice(0, categoryLabels.length).map((gradient, index) => {
+            const gradientObj = ctx.createLinearGradient(0, 0, 0, 400);
+            if (gradient.includes('#667eea')) {
+                gradientObj.addColorStop(0, '#667eea');
+                gradientObj.addColorStop(1, '#764ba2');
+            } else if (gradient.includes('#4facfe')) {
+                gradientObj.addColorStop(0, '#4facfe');
+                gradientObj.addColorStop(1, '#00f2fe');
+            } else if (gradient.includes('#43e97b')) {
+                gradientObj.addColorStop(0, '#43e97b');
+                gradientObj.addColorStop(1, '#38f9d7');
+            } else if (gradient.includes('#f093fb')) {
+                gradientObj.addColorStop(0, '#f093fb');
+                gradientObj.addColorStop(1, '#f5576c');
+            } else {
+                gradientObj.addColorStop(0, '#667eea');
+                gradientObj.addColorStop(1, '#764ba2');
+            }
+            return gradientObj;
+        });
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryValues,
+                    backgroundColor: gradients,
+                    borderWidth: 0,
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#fff',
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                family: 'Inter',
+                                size: 12,
+                                weight: '500'
+                            },
+                            color: '#374151'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#1f2937',
+                        bodyColor: '#374151',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ₹' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                },
+                elements: {
+                    arc: {
+                        borderWidth: 0
+                    }
+                }
+            }
+        });
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all cards
+            document.querySelectorAll('.stats-card, .chart-container, .category-item').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>
