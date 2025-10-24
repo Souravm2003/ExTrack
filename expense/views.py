@@ -32,6 +32,9 @@ def logout_view(request):
     return redirect('login')
 
 def register_view(request):
+    # Prepare a form instance for rendering; if POST and validation fails we can re-show it.
+    form = UserCreationForm()
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password1 = request.POST.get('password1')
@@ -58,8 +61,9 @@ def register_view(request):
             except Exception as e:
                 messages.error(request, 'Username already exists. Please choose a different username.')
     else:
-        # Create a dummy form for template compatibility
-        form = UserCreationForm()
+        # GET - form already created above
+        pass
+
     return render(request, 'register.html', {'form': form})
 
 # Dashboard view with proper authentication
