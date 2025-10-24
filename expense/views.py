@@ -8,7 +8,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Expense, Budget
+from .models import Expense, Budget, Income
+from django.db.models import Q
 from .serializers import ExpenseSerializer
 
 # Authentication Views
@@ -78,7 +79,24 @@ def dashboard(request):
                     budget.save()
                 messages.success(request, f'Budget set to ₹{budget_amount}!')
             return redirect('dashboard')
-        
+
+        # Handle income addition (separate form)
+        if 'income_title' in request.POST:
+            income_title = request.POST.get('income_title')
+            income_amount = request.POST.get('income_amount')
+            income_date = request.POST.get('income_date')
+            income_description = request.POST.get('income_description')
+            if income_title and income_amount and income_date:
+                Income.objects.create(
+                    user=request.user,
+                    title=income_title,
+                    amount=income_amount,
+                    date=income_date,
+                    description=income_description
+                )
+                messages.success(request, 'Income added successfully!')
+            return redirect('dashboard')
+
         # Handle expense addition
         title = request.POST.get('title')
         amount = request.POST.get('amount')
@@ -98,7 +116,25 @@ def dashboard(request):
             messages.success(request, 'Expense added successfully!')
         return redirect('dashboard')
 
+    # Base queryset
     expenses = Expense.objects.filter(user=request.user).order_by('-date')
+
+    # Search / filter via GET parameters (title/name, category, date)
+    q = request.GET.get('q', '').strip()
+    category_filter = request.GET.get('category', '').strip()
+    date_filter = request.GET.get('date', '').strip()
+
+    if q:
+        # search in title and description
+        expenses = expenses.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    if category_filter:
+        expenses = expenses.filter(category=category_filter)
+
+    if date_filter:
+        # expecting YYYY-MM-DD
+        expenses = expenses.filter(date=date_filter)
+    incomes = Income.objects.filter(user=request.user).order_by('-date')
     
     # Get or create budget
     budget, created = Budget.objects.get_or_create(
@@ -109,6 +145,9 @@ def dashboard(request):
     # Calculate statistics
     total_amount = sum(float(expense.amount) for expense in expenses)
     categories_count = len(set(expense.category for expense in expenses))
+
+    # Income statistics
+    total_income = sum(float(income.amount) for income in incomes)
     
     # Calculate monthly total (current month)
     from datetime import datetime
@@ -116,11 +155,17 @@ def dashboard(request):
     current_year = datetime.now().year
     monthly_expenses = expenses.filter(date__month=current_month, date__year=current_year)
     monthly_total = sum(float(expense.amount) for expense in monthly_expenses)
+
+    monthly_incomes = incomes.filter(date__month=current_month, date__year=current_year)
+    monthly_income_total = sum(float(income.amount) for income in monthly_incomes)
     
     context = {
         'expenses': expenses,
+        'incomes': incomes,
         'total_amount': total_amount,
+        'total_income': total_income,
         'monthly_total': monthly_total,
+        'monthly_income_total': monthly_income_total,
         'categories_count': categories_count,
         'budget': budget,
     }
