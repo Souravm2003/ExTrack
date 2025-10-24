@@ -539,7 +539,7 @@
                                     <button onclick="openEditModal({{ expense.pk }})" class="w-6 h-6 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-600 flex items-center justify-center transition-all duration-300 hover:scale-110" title="Edit">
                                         <i class="fas fa-edit text-xs"></i>
                                     </button>
-                                    <button onclick="deleteExpense({{ expense.pk }})" class="w-6 h-6 rounded-md bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-all duration-300 hover:scale-110" title="Delete">
+                                    <button data-expense-id="{{ expense.pk }}" onclick="deleteExpense(this.dataset.expenseId)" class="w-6 h-6 rounded-md bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-all duration-300 hover:scale-110" title="Delete">
                                         <i class="fas fa-trash text-xs"></i>
                                     </button>
                                 </div>
@@ -850,21 +850,28 @@
             }
         }
 
-        // Global variable to store expense ID for deletion
+        // Global variable to store expense ID for deletion (numeric)
         let expenseToDelete = null;
 
-        // Delete expense function
+        // Delete expense function - receives id from data attribute (string) and validates it
         function deleteExpense(expenseId) {
             console.log('deleteExpense called with ID:', expenseId);
-            console.log('Type of expenseId:', typeof expenseId);
-            
-            if (!expenseId || expenseId === 'None' || expenseId === 'null') {
+
+            // Normalize common invalid tokens
+            if (expenseId === null || expenseId === undefined || expenseId === 'None' || expenseId === 'null' || expenseId === '') {
                 showToast('Invalid expense ID. Please refresh the page.', 'error');
                 return;
             }
-            
-            expenseToDelete = expenseId;
-            console.log('expenseToDelete set to:', expenseToDelete);
+
+            // Parse to integer and validate
+            const id = parseInt(expenseId, 10);
+            if (Number.isNaN(id) || id <= 0) {
+                showToast('Invalid expense ID. Please refresh the page.', 'error');
+                return;
+            }
+
+            expenseToDelete = id;
+            console.log('expenseToDelete set to (number):', expenseToDelete);
             showConfirmationModal();
         }
 
@@ -901,76 +908,85 @@
         // Confirm delete action
         function confirmDelete() {
             console.log('confirmDelete called, expenseToDelete:', expenseToDelete);
-            
-            if (expenseToDelete) {
-                closeConfirmationModal();
-                
-                // Show loading toast
-                showToast('Deleting expense...', 'info');
-                
-                console.log('Deleting expense with ID:', expenseToDelete);
-                
-                const csrfToken = getCSRFToken();
-                console.log('CSRF Token:', csrfToken);
-                
-                if (!csrfToken) {
-                    showToast('CSRF token not found. Please refresh the page.', 'error');
-                    return;
-                }
-                
-                // Try AJAX first, fallback to form submission
-                fetch(`/delete/${expenseToDelete}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `csrfmiddlewaretoken=${csrfToken}`
-                })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    console.log('Response ok:', response.ok);
-                    if (response.ok) {
-                        showToast('Expense deleted successfully!', 'success');
-                        // Remove the expense card from DOM
-                        const expenseCard = document.querySelector(`[data-expense-id="${expenseToDelete}"]`);
-                        if (expenseCard) {
-                            expenseCard.style.transition = 'all 0.3s ease';
-                            expenseCard.style.transform = 'translateX(-100%)';
-                            expenseCard.style.opacity = '0';
-                            setTimeout(() => {
-                                expenseCard.remove();
-                                // Reload page to update stats
-                                window.location.reload();
-                            }, 300);
-                        }
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
-                    console.log('Falling back to form submission...');
-                    
-                    // Fallback to form submission
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/delete/${expenseToDelete}/`;
-                    
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = csrfToken;
-                    form.appendChild(csrfInput);
-                    
-                    document.body.appendChild(form);
-                    form.submit();
-                });
-            } else {
-                console.error('expenseToDelete is null or undefined');
-                showToast('Error: No expense selected for deletion.', 'error');
+
+            if (!expenseToDelete || Number.isNaN(expenseToDelete) || expenseToDelete <= 0) {
+                console.error('Invalid expenseToDelete:', expenseToDelete);
+                showToast('Error: No valid expense selected for deletion.', 'error');
+                return;
             }
+
+            // Capture id locally first because closeConfirmationModal() clears the global
+            const idToDelete = expenseToDelete;
+
+            // Close the confirmation UI immediately (this resets the global)
+            closeConfirmationModal();
+
+            // Show loading toast
+            showToast('Deleting expense...', 'info');
+
+            const csrfToken = getCSRFToken();
+            console.log('CSRF Token:', csrfToken);
+            if (!csrfToken) {
+                showToast('CSRF token not found. Please refresh the page.', 'error');
+                return;
+            }
+
+            // AJAX delete (POST) — Django view expects int pk in URL
+            fetch(`/delete/${idToDelete}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}`
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    showToast('Expense deleted successfully!', 'success');
+                    // Remove the expense card from DOM
+                    const expenseCard = document.querySelector(`[data-expense-id="${idToDelete}"]`);
+                    if (expenseCard) {
+                        expenseCard.style.transition = 'all 0.3s ease';
+                        expenseCard.style.transform = 'translateX(-100%)';
+                        expenseCard.style.opacity = '0';
+                        setTimeout(() => {
+                            expenseCard.remove();
+                            // Reload page to update stats
+                            window.location.reload();
+                        }, 300);
+                    } else {
+                        // If card not in DOM, reload to update UI
+                        window.location.reload();
+                    }
+                } else {
+                    return response.text().then(text => {
+                        // Try to show server error if available
+                        let msg = 'Failed to delete expense.';
+                        try { msg = JSON.parse(text).error || msg; } catch(e) {}
+                        showToast(msg, 'error');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Error:', error);
+                console.log('Falling back to form submission...');
+
+                // Fallback to form submission
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/delete/${idToDelete}/`;
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            });
         }
 
         // Toast notification system
@@ -1041,12 +1057,12 @@
                 console.log(`Card ${index}: ID = ${id}`);
             });
             
-            // Debug: Check delete buttons
-            const deleteButtons = document.querySelectorAll('[data-debug-id]');
+            // Debug: Check delete buttons (using data-expense-id)
+            const deleteButtons = document.querySelectorAll('button[data-expense-id]');
             console.log('Found delete buttons:', deleteButtons.length);
             deleteButtons.forEach((button, index) => {
-                const id = button.getAttribute('data-debug-id');
-                console.log(`Button ${index}: ID = ${id}`);
+                const id = button.getAttribute('data-expense-id');
+                console.log(`Button ${index}: data-expense-id = ${id}`);
             });
         });
     </script>
