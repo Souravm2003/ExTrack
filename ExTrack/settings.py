@@ -11,6 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from urllib.parse import urlparse
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +26,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hbil2!&ub=7m6^5&19dm#7mn65^z3prdom=i1otzcj-8ob=!ue'
+# Allow overriding via environment for production deployments (recommended)
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-hbil2!&ub=7m6^5&19dm#7mn65^z3prdom=i1otzcj-8ob=!ue')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+# Hosts allowed to serve the app. Provide a comma-separated list in PROD via env var.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+# If ALLOWED_HOSTS is empty (e.g., local dev), keep the default localhost settings
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -75,12 +87,39 @@ WSGI_APPLICATION = 'ExTrack.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database configuration: support DATABASE_URL env var (e.g. from Supabase)
+# Expected format: postgres://user:password@host:port/dbname
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Try to use dj_database_url if available for robust parsing, otherwise fallback to urllib
+    try:
+        import dj_database_url
+
+        DATABASES = {
+            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, engine='django.db.backends.postgresql')
+        }
+    except ImportError:
+        # Basic parsing fallback
+        url = urlparse(DATABASE_URL)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': url.path[1:],
+                'USER': url.username,
+                'PASSWORD': url.password,
+                'HOST': url.hostname,
+                'PORT': url.port or '',
+            }
+        }
+else:
+    # Default to local sqlite for development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 
 # Password validation
@@ -118,6 +157,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Where `collectstatic` will collect files for production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
