@@ -132,6 +132,10 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            /* make navbar sticky and above content cards but below modals */
+            position: sticky;
+            top: 0;
+            z-index: 10000;
         }
         
         .expense-card {
@@ -371,16 +375,23 @@
     <nav class="nav-glass shadow-2xl">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
-                <!-- Left side - User Info -->
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center">
-                            <i class="fas fa-user text-white text-sm"></i>
+                <!-- Left side - Profile / User Info (improved) -->
+                <div class="relative">
+                    <button id="profileBtn" class="flex items-center space-x-3 focus:outline-none">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white shadow-md">
+                            <span id="profileEmoji" class="text-lg" aria-hidden="true">💠</span>
                         </div>
-                        <div class="text-white">
+                        <div class="text-white hidden sm:block">
                             <p class="text-sm font-medium">{{ user.username }}</p>
                             <p class="text-xs text-white text-opacity-70">Welcome back</p>
                         </div>
+                        <i class="fas fa-chevron-down text-white ml-2 hidden sm:block"></i>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <div id="profileDropdown" class="absolute left-0 mt-2 w-44 bg-white rounded-xl shadow-lg py-2 hidden overflow-hidden" style="z-index:11000;">
+                        <a href="{% url 'overview' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Account</a>
+                        <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</a>
                     </div>
                 </div>
                 
@@ -403,9 +414,6 @@
                     </a>
                     <a href="{% url 'dashboard' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
                         <i class="fas fa-list mr-2"></i>Expenses
-                    </a>
-                    <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 shadow-lg">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
                     </a>
                 </div>
             </div>
@@ -440,6 +448,11 @@
                     <div class="category-icon-modern gradient-primary">
                         <i class="fas fa-rupee-sign"></i>
                     </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button onclick="openModal()" class="btn-primary text-white text-sm px-4 py-2 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">
+                        <i class="fas fa-plus mr-2"></i>Add Expense
+                    </button>
                 </div>
             </div>
             <div class="stats-card rounded-3xl p-8">
@@ -548,9 +561,6 @@
                 <div class="flex space-x-4">
                     <button onclick="openBudgetModal()" class="btn-primary text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">
                         <i class="fas fa-wallet mr-2"></i>Set Budget
-                    </button>
-                    <button onclick="openModal()" class="btn-primary text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">
-                        <i class="fas fa-plus mr-2"></i>Add Expense
                     </button>
                 </div>
             </div>
@@ -1170,6 +1180,41 @@
                 // show on focus (so user sees value while editing)
                 searchDate.addEventListener('focus', function() { this.classList.add('has-value'); });
                 searchDate.addEventListener('blur', function() { if (!this.value) this.classList.remove('has-value'); });
+            }
+
+            // Profile dropdown toggle (opens/closes dropdown and closes on outside click)
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!profileDropdown.classList.contains('hidden') && !profileBtn.contains(e.target)) {
+                        profileDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Random emoji avatar: choose once and persist to localStorage for consistency
+            const emojiEl = document.getElementById('profileEmoji');
+            if (emojiEl) {
+                const storageKey = 'extrack_profile_emoji';
+                const available = ['💼','💰','💸','🪙','📈','📊','🧾','🏦','🫰','✨','🌟','😊','😎','🪄','🦄','🎯','🏆'];
+                let chosen = null;
+                try {
+                    chosen = localStorage.getItem(storageKey);
+                } catch (e) { /* ignore storage errors */ }
+
+                if (!chosen) {
+                    chosen = available[Math.floor(Math.random() * available.length)];
+                    try { localStorage.setItem(storageKey, chosen); } catch (e) {}
+                }
+
+                emojiEl.textContent = chosen;
+                emojiEl.setAttribute('title', '{{ user.username }}');
             }
             
             // Debug: Check if there are any expense cards

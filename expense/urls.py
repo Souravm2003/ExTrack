@@ -10,6 +10,7 @@ urlpatterns = [
     # Dashboard and expense management
     path('dashboard/', views.dashboard, name='dashboard'),
     path('overview/', views.overview, name='overview'),
+    path('ai-insights/', views.ai_insights, name='ai-insights'),
     path('list/', views.get_expenses, name='expense-list'),
     path('add/', views.create_expense, name='expense-add'),
     path('edit/<int:pk>/', views.edit_expense, name='expense-edit'),

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.http import JsonResponse
+from .models import Income, Budget  # Ensure Income and Budget are imported
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -114,6 +115,8 @@ def dashboard(request):
                 title=title,
                 amount=amount,
                 category=category,
+
+
                 date=date,
                 description=description
             )
@@ -277,3 +280,109 @@ def edit_expense(request, pk):
         })
     
     return render(request, 'edit_expense.html', {'expense': expense})
+
+
+@login_required
+def ai_insights(request):
+    """Provide simple, heuristic-based AI-style insights about user's expenses.
+
+    This is a lightweight, local assistant (no external calls) that computes
+    category breakdowns, flags high-spend categories, compares monthly
+    spending to budget, and returns actionable tips.
+    """
+    expenses = Expense.objects.filter(user=request.user)
+    incomes = Income.objects.filter(user=request.user)
+
+    # Totals
+    total_amount = sum(float(e.amount) for e in expenses)
+
+    # Current month totals
+    from datetime import datetime
+    now = datetime.now()
+    this_month = expenses.filter(date__year=now.year, date__month=now.month)
+    monthly_total = sum(float(e.amount) for e in this_month)
+
+    # Category totals
+    category_totals = {}
+    for e in expenses:
+        category_totals.setdefault(e.category, 0.0)
+        category_totals[e.category] += float(e.amount)
+
+    # Top categories
+    sorted_cats = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
+    top_categories = [{'category': k, 'amount': v} for k, v in sorted_cats[:5]]
+
+    # Average monthly spending over available months
+    months = set((e.date.year, e.date.month) for e in expenses)
+    months_count = max(len(months), 1)
+    avg_monthly = total_amount / months_count if months_count else 0
+
+    # Flag categories that are unusually high compared to average per-category
+    high_spend = []
+    for cat, amt in category_totals.items():
+        # heuristics: if a category is more than 20% of total or > avg_monthly * 0.6
+        pct_of_total = (amt / total_amount * 100) if total_amount > 0 else 0
+        if pct_of_total >= 20 or amt >= (avg_monthly * 0.6):
+            high_spend.append({'category': cat, 'amount': amt, 'percent_of_total': round(pct_of_total, 1)})
+
+    # Budget warning
+    budget = None
+    try:
+        budget_obj = Budget.objects.get(user=request.user)
+        budget = float(budget_obj.amount)
+    except Budget.DoesNotExist:
+        budget = None
+
+    budget_warning = None
+    if budget is not None:
+        over_by = monthly_total - budget
+        budget_warning = {
+            'budget': budget,
+            'monthly_total': monthly_total,
+            'over_by': over_by,
+            'is_over': over_by > 0
+        }
+
+    # Simple suggestions (rule-based)
+    suggestions = []
+    if monthly_total > avg_monthly * 1.1:
+        suggestions.append('Your spending this month is higher than your average. Consider reviewing recent transactions and cutting discretionary spending.')
+
+    # Category-specific tips
+    tips_map = {
+        'food': 'Try cooking at home more often or set a weekly dining-out limit.',
+        'rent': 'Rent is fixed — consider negotiating utilities or saving elsewhere.',
+        'transport': 'Use public transport, carpool, or plan trips to reduce fuel costs.',
+        'entertainment': 'Pause subscriptions you rarely use and limit impulse purchases.',
+        'shopping': 'Create a shopping list and wait 48 hours before big purchases.',
+        'utilities': 'Check for energy-saving options and compare providers.',
+        'education': 'Look for scholarships, discounts, or second-hand resources.',
+        'healthcare': 'Review medicines and consider preventive care to reduce costs.',
+        'other': 'Review miscellaneous purchases and categorize recurring fees.'
+    }
+    for hs in high_spend:
+        cat = hs['category']
+        tip = tips_map.get(cat, None)
+        if tip:
+            suggestions.append(f"On {cat.title()}: {tip}")
+
+    # If user has income info, suggest savings rate
+    total_income = sum(float(i.amount) for i in incomes)
+    savings_rate = None
+    if total_income > 0:
+        savings = total_income - monthly_total
+        savings_rate = round((savings / total_income) * 100, 1)
+        suggestions.append(f'Estimated monthly savings rate: {savings_rate}%')
+
+    data = {
+        'total_amount': round(total_amount, 2),
+        'monthly_total': round(monthly_total, 2),
+        'top_categories': top_categories,
+        'high_spend': high_spend,
+        'budget_warning': budget_warning,
+        'suggestions': suggestions,
+        'avg_monthly': round(avg_monthly, 2),
+        'savings_rate': savings_rate,
+    }
+
+    return JsonResponse(data)
