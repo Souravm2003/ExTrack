@@ -68,6 +68,9 @@ def register_view(request):
     return render(request, 'register.html', {'form': form})
 
 # Dashboard view with proper authentication
+from django.db.models import Sum, Q
+from datetime import datetime
+
 @login_required
 def dashboard(request):
     if request.method == 'POST':
@@ -85,7 +88,7 @@ def dashboard(request):
                 messages.success(request, f'Budget set to ₹{budget_amount}!')
             return redirect('dashboard')
 
-        # Handle income addition (separate form)
+        # Handle income addition
         if 'income_title' in request.POST:
             income_title = request.POST.get('income_title')
             income_amount = request.POST.get('income_amount')
@@ -115,8 +118,6 @@ def dashboard(request):
                 title=title,
                 amount=amount,
                 category=category,
-
-
                 date=date,
                 description=description
             )
@@ -126,21 +127,18 @@ def dashboard(request):
     # Base queryset
     expenses = Expense.objects.filter(user=request.user).order_by('-date')
 
-    # Search / filter via GET parameters (title/name, category, date)
+    # Search/filter via GET parameters
     q = request.GET.get('q', '').strip()
     category_filter = request.GET.get('category', '').strip()
     date_filter = request.GET.get('date', '').strip()
 
     if q:
-        # search in title and description
         expenses = expenses.filter(Q(title__icontains=q) | Q(description__icontains=q))
-
     if category_filter:
         expenses = expenses.filter(category=category_filter)
-
     if date_filter:
-        # expecting YYYY-MM-DD
         expenses = expenses.filter(date=date_filter)
+
     incomes = Income.objects.filter(user=request.user).order_by('-date')
     
     # Get or create budget
@@ -149,36 +147,36 @@ def dashboard(request):
         defaults={'amount': 0}
     )
     
-    # Calculate statistics
-    total_amount = sum(float(expense.amount) for expense in expenses)
-    categories_count = len(set(expense.category for expense in expenses))
-
-    # Income statistics
-    total_income = sum(float(income.amount) for income in incomes)
-    
-    # Calculate monthly total (current month)
-    from datetime import datetime
+    # Optimized statistics using database aggregation
     current_month = datetime.now().month
     current_year = datetime.now().year
-    monthly_expenses = expenses.filter(date__month=current_month, date__year=current_year)
-    monthly_total = sum(float(expense.amount) for expense in monthly_expenses)
-
-    monthly_incomes = incomes.filter(date__month=current_month, date__year=current_year)
-    monthly_income_total = sum(float(income.amount) for income in monthly_incomes)
+    
+    # Use aggregate for efficient DB queries
+    expense_stats = Expense.objects.filter(user=request.user).aggregate(
+        total=Sum('amount'),
+        monthly_total=Sum('amount', filter=Q(date__month=current_month, date__year=current_year))
+    )
+    
+    income_stats = Income.objects.filter(user=request.user).aggregate(
+        total=Sum('amount'),
+        monthly_total=Sum('amount', filter=Q(date__month=current_month, date__year=current_year))
+    )
+    
+    # Get unique categories count
+    categories_count = Expense.objects.filter(user=request.user).values('category').distinct().count()
     
     context = {
-        'expenses': expenses,
-        'incomes': incomes,
-        'total_amount': total_amount,
-        'total_income': total_income,
-        'monthly_total': monthly_total,
-        'monthly_income_total': monthly_income_total,
+        'expenses': expenses[:50],  # Limit to 50 most recent
+        'incomes': incomes[:50],    # Limit to 50 most recent
+        'total_amount': expense_stats['total'] or 0,
+        'total_income': income_stats['total'] or 0,
+        'monthly_total': expense_stats['monthly_total'] or 0,
+        'monthly_income_total': income_stats['monthly_total'] or 0,
         'categories_count': categories_count,
         'budget': budget,
     }
     
     return render(request, 'dashboard.html', context)
-
 # Overview page with expense analytics
 @login_required
 def overview(request):
