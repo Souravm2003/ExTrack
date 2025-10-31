@@ -88,17 +88,24 @@ WSGI_APPLICATION = 'ExTrack.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Database configuration: support DATABASE_URL env var (e.g. from Supabase)
-# Expected format: postgres://user:password@host:port/dbname
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Try to use dj_database_url if available for robust parsing, otherwise fallback to urllib
     try:
         import dj_database_url
-
+        
         DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, engine='django.db.backends.postgresql')
+            'default': dj_database_url.parse(
+                DATABASE_URL,
+                conn_max_age=0,  # CRITICAL: Set to 0 for transaction pooler
+                engine='django.db.backends.postgresql'
+            )
         }
+        
+        # Disable server-side cursors for transaction pooler compatibility
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+        
     except ImportError:
         # Basic parsing fallback
         url = urlparse(DATABASE_URL)
@@ -110,6 +117,7 @@ if DATABASE_URL:
                 'PASSWORD': url.password,
                 'HOST': url.hostname,
                 'PORT': url.port or '',
+                'DISABLE_SERVER_SIDE_CURSORS': True,  # For transaction pooler
             }
         }
 else:
