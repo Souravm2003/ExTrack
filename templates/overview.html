@@ -222,18 +222,15 @@
     </style>
 </head>
 <body class="min-h-screen relative" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); background-attachment: fixed;">
-    <!-- Floating Background Elements -->
     <div class="floating-elements">
         <div class="floating-circle"></div>
         <div class="floating-circle"></div>
         <div class="floating-circle"></div>
     </div>
     
-    <!-- Navigation Header -->
     <nav class="nav-glass shadow-2xl relative z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
-                <!-- Left side - Profile / User Info (match dashboard) -->
                 <div class="relative">
                     <button id="profileBtn" class="flex items-center space-x-3 focus:outline-none">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white shadow-md">
@@ -253,7 +250,6 @@
                     </div>
                 </div>
                 
-                <!-- Center - Branding -->
                 <div class="flex items-center">
                     <a href="{% url 'dashboard' %}" class="flex items-center hover:opacity-80 transition duration-300 group">
                         <div class="w-12 h-12 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
@@ -263,7 +259,6 @@
                     </a>
                 </div>
                 
-                <!-- Right side - Navigation & Actions -->
                 <div class="flex items-center space-x-6">
                     <a href="{% url 'overview' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
                         <i class="fas fa-chart-pie mr-2"></i>Analytics
@@ -277,7 +272,6 @@
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-        <!-- Page Header -->
         <div class="text-center mb-12">
             <h1 class="text-4xl font-bold text-white mb-4">Analytics Dashboard</h1>
             <p class="text-white text-opacity-80 text-lg">Insights into your spending patterns and financial trends</p>
@@ -335,7 +329,6 @@
             </div>
         </div>
 
-        <!-- AI Assistant Card -->
         <div class="mb-8">
             <div id="aiAssistantCard" class="card-modern rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -349,7 +342,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            <!-- Category Breakdown Chart -->
             <div class="chart-container rounded-3xl p-8">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-gray-900">Expenses by Category</h3>
@@ -362,7 +354,6 @@
                 </div>
             </div>
 
-            <!-- Category List -->
             <div class="chart-container rounded-3xl p-8">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-gray-900">Category Breakdown</h3>
@@ -420,7 +411,6 @@
             </div>
         </div>
 
-        <!-- Recent Expenses -->
         <div class="table-modern rounded-3xl p-8">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-2xl font-bold text-gray-900">Recent Expenses</h3>
@@ -476,13 +466,13 @@
         </div>
     </div>
 
+    <script id="category-data" type="application/json">
+        {{ category_amounts_json|safe }}
+    </script>
     <script>
         // Category Chart with modern styling
-        const categoryData = {
-            {% for category, amount in category_amounts.items %}
-                "{{ category }}": {{ amount }}{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        };
+        const rawCategoryData = document.getElementById('category-data');
+        const categoryData = rawCategoryData ? JSON.parse(rawCategoryData.textContent) : {};
         
         const categoryLabels = Object.keys(categoryData).map(cat => cat.charAt(0).toUpperCase() + cat.slice(1));
         const categoryValues = Object.values(categoryData);
@@ -548,9 +538,9 @@
                             padding: 20,
                             usePointStyle: true,
                             font: {
-                                family: 'Inter',
+                                family: 'Lexend',
                                 size: 12,
-                                weight: '500'
+                                weight: '700'
                             },
                             color: '#374151'
                         }

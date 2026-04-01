@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -16,9 +17,6 @@ from .serializers import ExpenseSerializer
 from .permissions import IsViewerOrAbove, IsAdminRole
 
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
 
 def _get_profile(user):
     """Return UserProfile for user, auto-creating a 'viewer' profile if absent."""
@@ -39,9 +37,6 @@ def _check_active(request):
     return profile, None
 
 
-# ---------------------------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------------------------
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -52,7 +47,6 @@ def login_view(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            # Block deactivated accounts before session is opened
             profile = _get_profile(user)
             if not profile.is_active:
                 messages.error(request, 'Your account has been deactivated. Contact an administrator.')
@@ -91,7 +85,6 @@ def register_view(request):
             from django.contrib.auth.models import User
             try:
                 User.objects.create_user(username=username, password=password1)
-                # Signal auto-creates UserProfile with role='viewer'
                 messages.success(request, f'Account created for {username}! You can log in now.')
                 return redirect('login')
             except Exception:
@@ -99,9 +92,6 @@ def register_view(request):
     return render(request, 'register.html', {'form': form})
 
 
-# ---------------------------------------------------------------------------
-# Dashboard — all roles can VIEW; only admin can POST (create records)
-# ---------------------------------------------------------------------------
 
 @login_required
 def dashboard(request):
@@ -153,7 +143,6 @@ def dashboard(request):
             messages.success(request, 'Expense added successfully!')
         return redirect('dashboard')
 
-    # GET — build context
     expenses = Expense.objects.filter(user=request.user).order_by('-date')
     q               = request.GET.get('q', '').strip()
     category_filter = request.GET.get('category', '').strip()
@@ -191,16 +180,12 @@ def dashboard(request):
         'monthly_income_total': income_stats['monthly_total'] or 0,
         'categories_count':     categories_count,
         'budget':               budget,
-        # Role info exposed to template for conditional UI rendering
         'user_role':            profile.role,
         'can_edit':             profile.role == 'admin',
     }
     return render(request, 'dashboard.html', context)
 
 
-# ---------------------------------------------------------------------------
-# Overview — viewer / analyst / admin
-# ---------------------------------------------------------------------------
 
 @login_required
 def overview(request):
@@ -226,21 +211,19 @@ def overview(request):
     recent_expenses = expenses.order_by('-date')[:5]
 
     context = {
-        'category_totals':   category_percentages,
-        'category_amounts':  category_totals,
-        'category_list':     [(c, category_totals[c], category_percentages[c]) for c in category_totals],
-        'total_amount':      total_amount,
-        'average_amount':    average_amount,
-        'recent_expenses':   recent_expenses,
-        'expense_count':     expenses.count(),
-        'user_role':         profile.role,
+        'category_totals':        category_percentages,
+        'category_amounts':       category_totals,
+        'category_amounts_json':  json.dumps(category_totals),
+        'category_list':          [(c, category_totals[c], category_percentages[c]) for c in category_totals],
+        'total_amount':           total_amount,
+        'average_amount':         average_amount,
+        'recent_expenses':        recent_expenses,
+        'expense_count':          expenses.count(),
+        'user_role':              profile.role,
     }
     return render(request, 'overview.html', context)
 
 
-# ---------------------------------------------------------------------------
-# REST API — Expenses
-# ---------------------------------------------------------------------------
 
 @api_view(['GET'])
 @permission_classes([IsViewerOrAbove])
@@ -334,9 +317,6 @@ def edit_expense(request, pk):
     return render(request, 'edit_expense.html', {'expense': expense})
 
 
-# ---------------------------------------------------------------------------
-# AI Insights — analyst / admin only
-# ---------------------------------------------------------------------------
 
 @login_required
 def ai_insights(request):
