@@ -225,6 +225,86 @@ def overview(request):
 
 
 @login_required
+def income_list(request):
+    profile, err = _check_active(request)
+    if err:
+        return err
+
+    can_edit = profile.role == 'admin'
+
+    if profile.role == 'viewer':
+        messages.error(request, 'Viewers do not have access to income records.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        if not can_edit:
+            messages.error(request, 'Only Admin users can modify income records.')
+            return redirect('income_list')
+
+        action = request.POST.get('action', 'add')
+
+        if action == 'delete':
+            income_id = request.POST.get('income_id')
+            try:
+                income = Income.objects.get(pk=income_id)
+                income.delete()
+                messages.success(request, 'Income record deleted.')
+            except Income.DoesNotExist:
+                messages.error(request, 'Income not found.')
+            return redirect('income_list')
+
+        if action == 'edit':
+            income_id   = request.POST.get('income_id')
+            title       = request.POST.get('title', '').strip()
+            amount      = request.POST.get('amount')
+            date        = request.POST.get('date')
+            description = request.POST.get('description', '')
+            try:
+                income = Income.objects.get(pk=income_id)
+                if title and amount and date:
+                    income.title       = title
+                    income.amount      = amount
+                    income.date        = date
+                    income.description = description
+                    income.save()
+                    messages.success(request, 'Income updated.')
+            except Income.DoesNotExist:
+                messages.error(request, 'Income not found.')
+            return redirect('income_list')
+
+        # Default: add new income
+        title       = request.POST.get('title', '').strip()
+        amount      = request.POST.get('amount')
+        date        = request.POST.get('date')
+        description = request.POST.get('description', '')
+        if title and amount and date:
+            Income.objects.create(
+                user=request.user, title=title,
+                amount=amount, date=date, description=description,
+            )
+            messages.success(request, 'Income added successfully!')
+        else:
+            messages.error(request, 'Title, amount, and date are required.')
+        return redirect('income_list')
+
+    incomes = Income.objects.all().order_by('-date')
+    now = datetime.now()
+    stats = Income.objects.all().aggregate(
+        total=Sum('amount'),
+        monthly=Sum('amount', filter=Q(date__month=now.month, date__year=now.year)),
+    )
+
+    return render(request, 'income.html', {
+        'incomes':       incomes,
+        'total_income':  stats['total'] or 0,
+        'monthly_income': stats['monthly'] or 0,
+        'income_count':  incomes.count(),
+        'user_role':     profile.role,
+        'can_edit':      can_edit,
+    })
+
+
+@login_required
 def user_management(request):
     from django.contrib.auth.models import User as DjangoUser
     profile, err = _check_active(request)

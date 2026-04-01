@@ -417,6 +417,11 @@
                     <a href="{% url 'overview' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
                         <i class="fas fa-chart-pie mr-2"></i>Analytics
                     </a>
+                    {% if user_role != 'viewer' %}
+                    <a href="{% url 'income_list' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-arrow-trend-up mr-2"></i>Income
+                    </a>
+                    {% endif %}
                     {% if user_role == 'admin' %}
                     <a href="{% url 'user_management' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
                         <i class="fas fa-users mr-2"></i>Users
@@ -648,10 +653,14 @@
                         <i class="fas fa-receipt text-4xl text-gradient"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-3">No expenses yet</h3>
-                    <p class="text-gray-600 mb-8 max-w-md mx-auto">Start tracking your expenses by adding your first transaction. It's easy and will help you understand your spending patterns.</p>
+                    {% if can_edit %}
+                    <p class="text-gray-600 mb-8 max-w-md mx-auto">Start tracking your expenses by adding your first transaction.</p>
                     <button onclick="openModal()" class="btn-primary text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">
                         <i class="fas fa-plus mr-2"></i>Add Your First Expense
                     </button>
+                    {% else %}
+                    <p class="text-gray-600 max-w-md mx-auto">No expenses have been recorded yet. Check back later.</p>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>

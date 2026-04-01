@@ -1,0 +1,469 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Income - ExTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Lexend', sans-serif; }
+
+        .nav-glass {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+
+        .income-card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            border-left: 4px solid #22c55e;
+        }
+        .income-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .btn-primary { background: linear-gradient(135deg,#22c55e,#16a34a); }
+        .btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+
+        .text-gradient-green {
+            background: linear-gradient(135deg,#22c55e,#16a34a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            left:0; top:0;
+            width:100%; height:100%;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity:0; transform:translateY(-20px) scale(0.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+
+        .input-field {
+            border: 2px solid #e5e7eb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen" style="background: linear-gradient(135deg,#0f172a 0%,#052e16 50%,#0f172a 100%); background-attachment:fixed;">
+
+    <nav class="nav-glass shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Left: Profile -->
+                <div class="relative">
+                    <button id="profileBtn" class="flex items-center space-x-3 focus:outline-none">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-white shadow-md">
+                            <span id="profileEmoji" class="text-lg" aria-hidden="true">💠</span>
+                        </div>
+                        <div class="text-white hidden sm:block">
+                            <p class="text-sm font-medium">{{ user.username }}</p>
+                            <p class="text-xs text-white text-opacity-70">Income Tracker</p>
+                        </div>
+                        <i class="fas fa-chevron-down text-white ml-2 hidden sm:block"></i>
+                    </button>
+                    <div id="profileDropdown" class="absolute left-0 mt-2 w-44 bg-white rounded-xl shadow-lg py-2 hidden overflow-hidden" style="z-index:11000;">
+                        <a href="{% url 'overview' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Account</a>
+                        <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</a>
+                    </div>
+                </div>
+
+                <!-- Center: Branding -->
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard' %}" class="flex items-center hover:opacity-80 transition duration-300 group">
+                        <div class="w-12 h-12 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-wallet text-white text-xl"></i>
+                        </div>
+                        <h1 class="text-white text-2xl font-bold tracking-tight">ExTrack</h1>
+                    </a>
+                </div>
+
+                <!-- Right: Nav -->
+                <div class="flex items-center space-x-6">
+                    <a href="{% url 'overview' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-chart-pie mr-2"></i>Analytics
+                    </a>
+                    <a href="{% url 'income_list' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
+                        <i class="fas fa-arrow-trend-up mr-2"></i>Income
+                    </a>
+                    {% if user_role == 'admin' %}
+                    <a href="{% url 'user_management' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-users mr-2"></i>Users
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'dashboard' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-list mr-2"></i>Expenses
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-xl text-sm font-medium
+                {% if message.tags == 'success' %}bg-green-100 text-green-800
+                {% elif message.tags == 'error' %}bg-red-100 text-red-800
+                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-4xl font-bold text-white mb-2">Company Income</h2>
+                <p class="text-gray-400">Track all revenue and income sources</p>
+            </div>
+            {% if can_edit %}
+            <button onclick="openAddModal()" class="btn-primary text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg flex items-center gap-2">
+                <i class="fas fa-plus"></i> Add Income
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="stat-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium mb-1">Total Income</p>
+                        <p class="text-3xl font-bold text-gradient-green">₹{{ total_income|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-400 mt-1">All time</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background: linear-gradient(135deg,#22c55e,#16a34a);">
+                        <i class="fas fa-rupee-sign text-lg"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium mb-1">This Month</p>
+                        <p class="text-3xl font-bold text-gray-900">₹{{ monthly_income|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-400 mt-1">Current month</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background: linear-gradient(135deg,#3b82f6,#1d4ed8);">
+                        <i class="fas fa-calendar text-lg"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium mb-1">Records</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ income_count }}</p>
+                        <p class="text-xs text-gray-400 mt-1">Total entries</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background: linear-gradient(135deg,#a855f7,#7c3aed);">
+                        <i class="fas fa-receipt text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Income List -->
+        {% if incomes %}
+        <div class="space-y-4">
+            {% for income in incomes %}
+            <div class="income-card p-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
+                            <i class="fas fa-arrow-up text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-900">{{ income.title }}</p>
+                            <div class="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                                <span><i class="fas fa-calendar mr-1"></i>{{ income.date }}</span>
+                                <span><i class="fas fa-user mr-1"></i>{{ income.user.username }}</span>
+                            </div>
+                            {% if income.description %}
+                            <p class="text-xs text-gray-500 mt-1">{{ income.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p class="text-xl font-bold text-gradient-green">+₹{{ income.amount }}</p>
+                        {% if can_edit %}
+                        <button onclick="openEditModal({{ income.pk }}, '{{ income.title|escapejs }}', '{{ income.amount }}', '{{ income.date }}', '{{ income.description|escapejs }}')"
+                                class="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-all" title="Edit">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="openDeleteModal({{ income.pk }}, '{{ income.title|escapejs }}')"
+                                class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-all" title="Delete">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20">
+            <div class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center" style="background:rgba(34,197,94,0.15);">
+                <i class="fas fa-arrow-trend-up text-4xl text-green-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">No income records yet</h3>
+            {% if can_edit %}
+            <p class="text-gray-400 mb-8">Start recording company revenue by adding your first income entry.</p>
+            <button onclick="openAddModal()" class="btn-primary text-white px-8 py-4 rounded-2xl font-semibold shadow-lg transition-all">
+                <i class="fas fa-plus mr-2"></i>Add First Income
+            </button>
+            {% else %}
+            <p class="text-gray-400">No income has been recorded yet. Check back later.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Income Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="px-6 py-4 text-white" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Add Income</h3>
+                    <button onclick="closeAddModal()" class="w-8 h-8 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 flex items-center justify-center">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                    <input type="text" name="title" required placeholder="e.g. Client Payment"
+                           class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Amount (₹)</label>
+                        <input type="number" name="amount" required placeholder="0.00" step="0.01" min="0"
+                               class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+                        <input type="date" name="date" required
+                               class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea name="description" rows="2" placeholder="Notes..."
+                              class="input-field w-full px-3 py-2 rounded-xl text-sm resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button type="button" onclick="closeAddModal()"
+                            class="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold text-sm">Cancel</button>
+                    <button type="submit"
+                            class="btn-primary text-white px-6 py-2 rounded-xl font-semibold text-sm shadow-lg">
+                        <i class="fas fa-plus mr-2"></i>Add Income
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Income Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="px-6 py-4 text-white" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Edit Income</h3>
+                    <button onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 flex items-center justify-center">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="income_id" id="editIncomeId">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                    <input type="text" name="title" id="editTitle" required
+                           class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Amount (₹)</label>
+                        <input type="number" name="amount" id="editAmount" required step="0.01" min="0"
+                               class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+                        <input type="date" name="date" id="editDate" required
+                               class="input-field w-full px-3 py-2 rounded-xl text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                    <textarea name="description" id="editDescription" rows="2"
+                              class="input-field w-full px-3 py-2 rounded-xl text-sm resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button type="button" onclick="closeEditModal()"
+                            class="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold text-sm">Cancel</button>
+                    <button type="submit"
+                            class="text-white px-6 py-2 rounded-xl font-semibold text-sm shadow-lg" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="max-width:380px;">
+            <div class="px-6 py-4 text-white" style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Delete Income</h3>
+                    <button onclick="closeDeleteModal()" class="w-8 h-8 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 flex items-center justify-center">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900 text-sm">Are you sure?</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Delete <strong id="deleteTitle" class="text-red-600"></strong>? This cannot be undone.</p>
+                    </div>
+                </div>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="income_id" id="deleteIncomeId">
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="closeDeleteModal()"
+                                class="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold text-sm">Cancel</button>
+                        <button type="submit"
+                                class="px-5 py-2 rounded-xl text-white font-semibold text-sm shadow-lg" style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
+                            <i class="fas fa-trash mr-2"></i>Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        function openEditModal(id, title, amount, date, description) {
+            document.getElementById('editIncomeId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editAmount').value = amount;
+            document.getElementById('editDate').value = date;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        function openDeleteModal(id, title) {
+            document.getElementById('deleteIncomeId').value = id;
+            document.getElementById('deleteTitle').textContent = title;
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        window.onclick = function(e) {
+            ['addModal','editModal','deleteModal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (e.target === el) { el.style.display = 'none'; document.body.style.overflow = 'auto'; }
+            });
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!profileDropdown.classList.contains('hidden') && !profileBtn.contains(e.target)) {
+                        profileDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            const emojiEl = document.getElementById('profileEmoji');
+            if (emojiEl) {
+                const storageKey = 'extrack_profile_emoji';
+                const available = ['💼','💰','💸','🪙','📈','📊','🧾','🏦','🫰','✨','🌟','😊','😎','🪄','🦄','🎯','🏆'];
+                let chosen = null;
+                try { chosen = localStorage.getItem(storageKey); } catch(e) {}
+                if (!chosen) {
+                    chosen = available[Math.floor(Math.random() * available.length)];
+                    try { localStorage.setItem(storageKey, chosen); } catch(e){}
+                }
+                emojiEl.textContent = chosen;
+                emojiEl.setAttribute('title', '{{ user.username }}');
+            }
+        });
+    </script>
+</body>
+</html>

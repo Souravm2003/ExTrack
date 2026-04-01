@@ -263,6 +263,11 @@
                     <a href="{% url 'overview' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
                         <i class="fas fa-chart-pie mr-2"></i>Analytics
                     </a>
+                    {% if user_role != 'viewer' %}
+                    <a href="{% url 'income_list' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-arrow-trend-up mr-2"></i>Income
+                    </a>
+                    {% endif %}
                     {% if user_role == 'admin' %}
                     <a href="{% url 'user_management' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
                         <i class="fas fa-users mr-2"></i>Users
@@ -334,6 +339,7 @@
             </div>
         </div>
 
+        {% if user_role != 'viewer' %}
         <div class="mb-8">
             <div id="aiAssistantCard" class="card-modern rounded-3xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -345,6 +351,7 @@
                 <div id="aiContent" class="text-sm text-gray-700">Loading insights...</div>
             </div>
         </div>
+        {% endif %}
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             <div class="chart-container rounded-3xl p-8">
@@ -642,7 +649,8 @@
             }
         });
     </script>
-    <script>
+        {% if user_role != 'viewer' %}
+        <script>
         // AI Insights fetcher
         async function fetchAIInsights() {
             const aiContent = document.getElementById('aiContent');
@@ -694,9 +702,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             const runBtn = document.getElementById('runAiBtn');
             if (runBtn) runBtn.addEventListener('click', fetchAIInsights);
-            // auto-load once
             fetchAIInsights();
         });
-    </script>
+        </script>
+        {% endif %}
 </body>
 </html>
