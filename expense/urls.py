@@ -15,6 +15,7 @@ urlpatterns = [
     # ── HTML pages ────────────────────────────────────────────────────────
     path('dashboard/', views.dashboard, name='dashboard'),
     path('overview/',  views.overview,  name='overview'),
+    path('users/',     views.user_management, name='user_management'),
 
     # ── Expense CRUD ──────────────────────────────────────────────────────
     path('list/',             views.get_expenses,    name='expense-list'),  # viewer+

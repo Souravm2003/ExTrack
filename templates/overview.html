@@ -263,6 +263,11 @@
                     <a href="{% url 'overview' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
                         <i class="fas fa-chart-pie mr-2"></i>Analytics
                     </a>
+                    {% if user_role == 'admin' %}
+                    <a href="{% url 'user_management' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
+                        <i class="fas fa-users mr-2"></i>Users
+                    </a>
+                    {% endif %}
                     <a href="{% url 'dashboard' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10 backdrop-blur-sm">
                         <i class="fas fa-list mr-2"></i>Expenses
                     </a>

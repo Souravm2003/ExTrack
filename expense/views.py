@@ -143,7 +143,7 @@ def dashboard(request):
             messages.success(request, 'Expense added successfully!')
         return redirect('dashboard')
 
-    expenses = Expense.objects.filter(user=request.user).order_by('-date')
+    expenses = Expense.objects.all().order_by('-date')
     q               = request.GET.get('q', '').strip()
     category_filter = request.GET.get('category', '').strip()
     date_filter     = request.GET.get('date', '').strip()
@@ -155,20 +155,20 @@ def dashboard(request):
     if date_filter:
         expenses = expenses.filter(date=date_filter)
 
-    incomes = Income.objects.filter(user=request.user).order_by('-date')
+    incomes = Income.objects.all().order_by('-date')
     budget, _ = Budget.objects.get_or_create(user=request.user, defaults={'amount': 0})
 
     now = datetime.now()
-    expense_stats = Expense.objects.filter(user=request.user).aggregate(
+    expense_stats = Expense.objects.all().aggregate(
         total=Sum('amount'),
         monthly_total=Sum('amount', filter=Q(date__month=now.month, date__year=now.year)),
     )
-    income_stats = Income.objects.filter(user=request.user).aggregate(
+    income_stats = Income.objects.all().aggregate(
         total=Sum('amount'),
         monthly_total=Sum('amount', filter=Q(date__month=now.month, date__year=now.year)),
     )
     categories_count = (
-        Expense.objects.filter(user=request.user).values('category').distinct().count()
+        Expense.objects.all().values('category').distinct().count()
     )
 
     context = {
@@ -193,7 +193,7 @@ def overview(request):
     if err:
         return err
 
-    expenses       = Expense.objects.filter(user=request.user)
+    expenses       = Expense.objects.all()
     category_totals = {}
     total_amount    = 0
 
@@ -222,6 +222,94 @@ def overview(request):
         'user_role':              profile.role,
     }
     return render(request, 'overview.html', context)
+
+
+@login_required
+def user_management(request):
+    from django.contrib.auth.models import User as DjangoUser
+    profile, err = _check_active(request)
+    if err:
+        return err
+
+    if profile.role != 'admin':
+        messages.error(request, 'Only Admin users can access user management.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'create_user':
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '').strip()
+            role     = request.POST.get('role', 'viewer')
+            if username and password:
+                try:
+                    new_user = DjangoUser.objects.create_user(username=username, password=password)
+                    p = _get_profile(new_user)
+                    p.role = role
+                    p.save()
+                    messages.success(request, f'User "{username}" created with {role} role.')
+                except Exception:
+                    messages.error(request, f'Username "{username}" already exists.')
+            else:
+                messages.error(request, 'Username and password are required.')
+
+        elif action == 'change_role':
+            user_id  = request.POST.get('user_id')
+            new_role = request.POST.get('role')
+            try:
+                target = DjangoUser.objects.get(pk=user_id)
+                if target == request.user:
+                    messages.error(request, 'You cannot change your own role.')
+                else:
+                    p = _get_profile(target)
+                    p.role = new_role
+                    p.save()
+                    messages.success(request, f'Role updated to {new_role} for {target.username}.')
+            except DjangoUser.DoesNotExist:
+                messages.error(request, 'User not found.')
+
+        elif action == 'toggle_active':
+            user_id = request.POST.get('user_id')
+            try:
+                target = DjangoUser.objects.get(pk=user_id)
+                if target == request.user:
+                    messages.error(request, 'You cannot deactivate yourself.')
+                else:
+                    p = _get_profile(target)
+                    p.is_active = not p.is_active
+                    p.save()
+                    status_str = 'activated' if p.is_active else 'deactivated'
+                    messages.success(request, f'User {target.username} {status_str}.')
+            except DjangoUser.DoesNotExist:
+                messages.error(request, 'User not found.')
+
+        elif action == 'delete_user':
+            user_id = request.POST.get('user_id')
+            try:
+                target = DjangoUser.objects.get(pk=user_id)
+                if target == request.user:
+                    messages.error(request, 'You cannot delete yourself.')
+                else:
+                    name = target.username
+                    target.delete()
+                    messages.success(request, f'User "{name}" deleted.')
+            except DjangoUser.DoesNotExist:
+                messages.error(request, 'User not found.')
+
+        return redirect('user_management')
+
+    all_users = DjangoUser.objects.select_related('userprofile').all().order_by('date_joined')
+    users_data = []
+    for u in all_users:
+        up = _get_profile(u)
+        users_data.append({'user': u, 'profile': up, 'is_self': u == request.user})
+
+    return render(request, 'user_management.html', {
+        'users_data': users_data,
+        'user_role':  profile.role,
+        'can_edit':   True,
+    })
 
 
 

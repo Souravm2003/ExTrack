@@ -1,0 +1,387 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - ExTrack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Lexend', sans-serif; }
+
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .card-glass {
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .user-row {
+            transition: all 0.2s ease;
+        }
+        .user-row:hover {
+            background: rgba(102, 126, 234, 0.04);
+        }
+
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-admin    { background: #ede9fe; color: #6d28d9; }
+        .role-analyst  { background: #dbeafe; color: #1d4ed8; }
+        .role-viewer   { background: #d1fae5; color: #065f46; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-active   { background: #d1fae5; color: #065f46; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .input-modern {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+        .input-modern:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        }
+
+        select.input-modern {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 18px;
+            padding-right: 36px;
+        }
+    </style>
+</head>
+<body class="min-h-screen" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); background-attachment: fixed;">
+
+    <nav class="nav-glass shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard' %}" class="flex items-center hover:opacity-80 transition duration-300 group">
+                        <div class="w-12 h-12 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-wallet text-white text-xl"></i>
+                        </div>
+                        <h1 class="text-white text-2xl font-bold tracking-tight">ExTrack</h1>
+                    </a>
+                </div>
+
+                <div class="flex items-center space-x-6">
+                    <a href="{% url 'overview' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10">
+                        <i class="fas fa-chart-pie mr-2"></i>Analytics
+                    </a>
+                    <a href="{% url 'user_management' %}" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
+                        <i class="fas fa-users mr-2"></i>Users
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10">
+                        <i class="fas fa-list mr-2"></i>Expenses
+                    </a>
+                    <a href="{% url 'logout' %}" class="text-white hover:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-white hover:bg-opacity-10">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-xl text-sm font-medium
+                {% if message.tags == 'success' %}bg-green-100 text-green-800
+                {% elif message.tags == 'error' %}bg-red-100 text-red-800
+                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-4xl font-bold text-white mb-2">User Management</h2>
+                <p class="text-gray-400">Manage team members and their access roles</p>
+            </div>
+            <button onclick="openCreateModal()" class="btn-primary text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg flex items-center gap-2">
+                <i class="fas fa-user-plus"></i> Add User
+            </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="card-glass p-5 text-center">
+                <p class="text-3xl font-bold" style="background: linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">{{ users_data|length }}</p>
+                <p class="text-sm text-gray-500 mt-1 font-medium">Total Users</p>
+            </div>
+            <div class="card-glass p-5 text-center">
+                <p class="text-3xl font-bold text-green-600">{{ users_data|length }}</p>
+                <p class="text-sm text-gray-500 mt-1 font-medium">Active Users</p>
+            </div>
+            <div class="card-glass p-5 text-center">
+                <p class="text-3xl font-bold text-purple-600">Admin</p>
+                <p class="text-sm text-gray-500 mt-1 font-medium">Your Role</p>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card-glass overflow-hidden">
+            <div class="px-8 py-5 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-900">All Users</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="text-left px-8 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                            <th class="text-left px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="text-left px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="text-left px-4 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined</th>
+                            <th class="text-right px-8 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for item in users_data %}
+                        <tr class="user-row">
+                            <td class="px-8 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                                         style="background: linear-gradient(135deg,#667eea,#764ba2);">
+                                        {{ item.user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 text-sm">
+                                            {{ item.user.username }}
+                                            {% if item.is_self %}<span class="ml-1 text-xs text-purple-500">(you)</span>{% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-400">{{ item.user.email|default:"No email" }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="role-badge role-{{ item.profile.role }}">
+                                    {% if item.profile.role == 'admin' %}<i class="fas fa-shield-alt text-xs"></i>
+                                    {% elif item.profile.role == 'analyst' %}<i class="fas fa-chart-bar text-xs"></i>
+                                    {% else %}<i class="fas fa-eye text-xs"></i>{% endif %}
+                                    {{ item.profile.role|title }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="status-badge {% if item.profile.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                    <span class="w-1.5 h-1.5 rounded-full {% if item.profile.is_active %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+                                    {% if item.profile.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-500">
+                                {{ item.user.date_joined|date:"M d, Y" }}
+                            </td>
+                            <td class="px-8 py-4">
+                                {% if not item.is_self %}
+                                <div class="flex items-center justify-end gap-2">
+                                    <button onclick="openRoleModal({{ item.user.pk }}, '{{ item.user.username }}', '{{ item.profile.role }}')"
+                                            class="px-3 py-1.5 text-xs rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold transition-all">
+                                        <i class="fas fa-user-edit mr-1"></i>Role
+                                    </button>
+                                    <form method="POST" style="display:inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_active">
+                                        <input type="hidden" name="user_id" value="{{ item.user.pk }}">
+                                        <button type="submit"
+                                                class="px-3 py-1.5 text-xs rounded-lg font-semibold transition-all
+                                                {% if item.profile.is_active %}bg-yellow-50 text-yellow-700 hover:bg-yellow-100{% else %}bg-green-50 text-green-700 hover:bg-green-100{% endif %}">
+                                            <i class="fas {% if item.profile.is_active %}fa-ban{% else %}fa-check{% endif %} mr-1"></i>
+                                            {% if item.profile.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display:inline" onsubmit="return confirm('Delete {{ item.user.username }}? This cannot be undone.')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_user">
+                                        <input type="hidden" name="user_id" value="{{ item.user.pk }}">
+                                        <button type="submit" class="px-3 py-1.5 text-xs rounded-lg bg-red-50 text-red-700 hover:bg-red-100 font-semibold transition-all">
+                                            <i class="fas fa-trash mr-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <p class="text-xs text-gray-400 text-right">Current user</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-8 py-16 text-center text-gray-400">
+                                <i class="fas fa-users text-4xl mb-3 block"></i>
+                                No users found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="px-6 py-4 text-white" style="background: linear-gradient(135deg,#667eea,#764ba2);">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Add New User</h3>
+                    <button onclick="closeCreateModal()" class="w-8 h-8 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 flex items-center justify-center transition-all">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_user">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                    <input type="text" name="username" required placeholder="e.g. john_doe"
+                           class="input-modern w-full px-3 py-2 rounded-xl focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                    <input type="password" name="password" required placeholder="Min 8 characters"
+                           class="input-modern w-full px-3 py-2 rounded-xl focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Role</label>
+                    <select name="role" class="input-modern w-full px-3 py-2 rounded-xl focus:outline-none text-sm">
+                        <option value="viewer">👁️ Viewer — Read only</option>
+                        <option value="analyst">📊 Analyst — View + AI Insights</option>
+                        <option value="admin">⚙️ Admin — Full access</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeCreateModal()"
+                            class="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold text-sm transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="btn-primary text-white px-6 py-2 rounded-xl font-semibold text-sm transition-all shadow-lg">
+                        <i class="fas fa-user-plus mr-2"></i>Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Role Modal -->
+    <div id="roleModal" class="modal">
+        <div class="modal-content">
+            <div class="px-6 py-4 text-white" style="background: linear-gradient(135deg,#667eea,#764ba2);">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Change Role</h3>
+                    <button onclick="closeRoleModal()" class="w-8 h-8 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 flex items-center justify-center transition-all">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_role">
+                <input type="hidden" name="user_id" id="roleUserId">
+                <p class="text-sm text-gray-600">Changing role for: <strong id="roleUsername" class="text-gray-900"></strong></p>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">New Role</label>
+                    <select name="role" id="roleSelect" class="input-modern w-full px-3 py-2 rounded-xl focus:outline-none text-sm">
+                        <option value="viewer">👁️ Viewer — Read only</option>
+                        <option value="analyst">📊 Analyst — View + AI Insights</option>
+                        <option value="admin">⚙️ Admin — Full access</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeRoleModal()"
+                            class="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold text-sm transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="btn-primary text-white px-6 py-2 rounded-xl font-semibold text-sm transition-all shadow-lg">
+                        <i class="fas fa-save mr-2"></i>Save Role
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        function openRoleModal(userId, username, currentRole) {
+            document.getElementById('roleUserId').value = userId;
+            document.getElementById('roleUsername').textContent = username;
+            document.getElementById('roleSelect').value = currentRole;
+            document.getElementById('roleModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeRoleModal() {
+            document.getElementById('roleModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        window.onclick = function(e) {
+            if (e.target === document.getElementById('createModal')) closeCreateModal();
+            if (e.target === document.getElementById('roleModal')) closeRoleModal();
+        }
+    </script>
+</body>
+</html>
