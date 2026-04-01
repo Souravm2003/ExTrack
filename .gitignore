@@ -1,0 +1,75 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---- Django ----
+*.log
+*.pot
+*.pyc
+*.pyo
+*.mo
+*.db
+*.sqlite3
+db.sqlite3
+
+# Django specific
+/media/
+staticfiles/
+static/
+*.egg-info/
+.env
+.env.*
+.envrc
+
+# ---- Virtual Environments ----
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+
+# ---- IDE / Editor files ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ---- OS generated files ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ---- Build / Distribution ----
+build/
+dist/
+*.egg
+*.manifest
+*.spec
+
+# ---- Migrations (optional — if you don’t want to track them initially) ----
+# Uncomment the next line if you prefer to exclude migrations until stable
+# **/migrations/
+
+# ---- Coverage / Testing ----
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+htmlcov/
+
+# ---- PyInstaller ----
+#  Usually these files are written by PyInstaller for packaging.
+*.manifest
+*.spec
+
+# ---- Pipenv / Poetry / other env managers ----
+Pipfile.lock
+poetry.lock
+
+# ---- Local configs ----
+*.local
+settings_local.py

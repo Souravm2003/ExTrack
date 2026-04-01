@@ -1,0 +1,97 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+class UserProfile(models.Model):
+    """
+    Extends the built-in User with an application-level role and active status.
+    Auto-created (as 'viewer') whenever a new User is saved via post_save signal.
+    """
+    ROLE_CHOICES = [
+        ('viewer',   'Viewer'),    # Read-only: dashboard & records
+        ('analyst',  'Analyst'),   # Read + AI insights
+        ('admin',    'Admin'),     # Full CRUD + user management
+    ]
+
+    user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    role       = models.CharField(max_length=10, choices=ROLE_CHOICES, default='viewer')
+    is_active  = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} [{self.role}]"
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Auto-create a viewer profile whenever a new User is saved."""
+    if created:
+        UserProfile.objects.get_or_create(user=instance, defaults={'role': 'viewer'})
+
+
+class Budget(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s Budget: ₹{self.amount}"
+    
+    @property
+    def remaining_amount(self):
+        """Calculate remaining budget amount"""
+        total_expenses = self.user.expense_set.aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        return self.amount - total_expenses
+    
+    @property
+    def spent_percentage(self):
+        """Calculate percentage of budget spent"""
+        if self.amount == 0:
+            return 0
+        total_expenses = self.user.expense_set.aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        return min((total_expenses / self.amount) * 100, 100)
+
+class Expense(models.Model):
+    CATEGORY_CHOICES = [
+        ('food', 'Food'),
+        ('rent', 'Rent'),
+        ('transport', 'Transport'),
+        ('entertainment', 'Entertainment'),
+        ('healthcare', 'Healthcare'),
+        ('shopping', 'Shopping'),
+        ('utilities', 'Utilities'),
+        ('education', 'Education'),
+        ('other', 'Other'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    date = models.DateField(auto_now_add=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.title} - ₹{self.amount}"
+
+
+class Income(models.Model):
+    """Simple Income model to track money received."""
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    description = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} +₹{self.amount}"
