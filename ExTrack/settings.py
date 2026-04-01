@@ -43,7 +43,11 @@ if not ALLOWED_HOSTS:
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
     if o.strip()
-] or ['http://localhost:8000', 'http://127.0.0.1:8000']
+] or [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://*.onrender.com',
+]
 
 # Production security (only when DEBUG is False)
 if not DEBUG:
@@ -104,7 +108,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
 else:
     DATABASES = {
