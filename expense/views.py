@@ -4,7 +4,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Q
 from datetime import datetime
 
@@ -36,6 +36,31 @@ def _check_active(request):
         return None, redirect('login')
     return profile, None
 
+
+def setup_admin(request):
+    """
+    One-time setup endpoint that creates an admin user for placement evaluation.
+    Safe to call multiple times - it just re-sets the admin credentials.
+    """
+    from django.contrib.auth.models import User
+    username = 'admin'
+    password = 'admin123'
+    
+    user, created = User.objects.get_or_create(username=username)
+    if created:
+        user.set_password(password)
+        user.save()
+    else:
+        # Update password if user already exists
+        user.set_password(password)
+        user.save()
+    
+    profile = _get_profile(user)
+    profile.role = 'admin'
+    profile.is_active = True
+    profile.save()
+    
+    return HttpResponse("✅ Admin ready! <br>Username: <strong>admin</strong> | Password: <strong>admin123</strong>")
 
 
 def login_view(request):

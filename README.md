@@ -129,11 +129,30 @@ The application will be available at: **http://127.0.0.1:8000**
 | Page | URL |
 |---|---|
 | Home (redirects to login) | http://127.0.0.1:8000/ |
+| **Setup Admin** (one-time, for evaluators) | http://127.0.0.1:8000/setup/ |
 | Login | http://127.0.0.1:8000/login/ |
 | Register | http://127.0.0.1:8000/register/ |
 | Dashboard | http://127.0.0.1:8000/dashboard/ |
 | Overview & Analytics | http://127.0.0.1:8000/overview/ |
 | Django Admin Panel | http://127.0.0.1:8000/admin/ |
+
+### Quick Start for Evaluators
+
+For **placement evaluation**, the easiest way to get started:
+
+1. **Create admin user** by visiting:
+   ```
+   http://127.0.0.1:8000/setup/
+   ```
+   This endpoint creates an admin account with default credentials (safe to call multiple times).
+
+2. **Login with default credentials:**
+   - **Username:** `admin`
+   - **Password:** `admin123`
+
+3. **Start exploring:** After login, you have full access to the dashboard and all features.
+
+**Note:** The `/setup/` endpoint is idempotent and safe to call multiple times—it just ensures the admin user exists with the specified credentials.
 
 ---
 

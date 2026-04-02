@@ -7,6 +7,9 @@ urlpatterns = [
     # Root
     path('', lambda request: redirect('login'), name='home'),
 
+    # ── Setup (One-time admin creation for deployment) ────────────────────
+    path('setup/', views.setup_admin, name='setup-admin'),
+
     # ── Authentication ────────────────────────────────────────────────────
     path('login/',    views.login_view,    name='login'),
     path('logout/',   views.logout_view,   name='logout'),
