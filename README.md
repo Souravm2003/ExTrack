@@ -428,6 +428,14 @@ This project is pre-configured for deployment on [Render](https://render.com) us
 
 5. Click **Create Web Service** — Render will build and deploy automatically.
 
+6. **Create the admin user**
+   Visit `https://extrack-XXXX.onrender.com/setup/`
+   This creates a default admin account:
+   | Field | Value |
+   |---|---|
+   | **Username** | `admin` |
+   | **Password** | `admin123` |
+
 ### Live URL
 
 After deployment, the app will be available at: `https://extrack-XXXX.onrender.com`
