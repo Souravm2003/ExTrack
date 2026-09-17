@@ -7,30 +7,27 @@ urlpatterns = [
     # Root
     path('', lambda request: redirect('login'), name='home'),
 
-    # ── Setup (One-time admin creation for deployment) ────────────────────
-    path('setup/', views.setup_admin, name='setup-admin'),
-
-    # ── Authentication ────────────────────────────────────────────────────
+    # Authentication
     path('login/',    views.login_view,    name='login'),
     path('logout/',   views.logout_view,   name='logout'),
     path('register/', views.register_view, name='register'),
 
-    # ── HTML pages ────────────────────────────────────────────────────────
+    # HTML pages
     path('dashboard/', views.dashboard, name='dashboard'),
     path('overview/',  views.overview,  name='overview'),
     path('users/',     views.user_management, name='user_management'),
     path('income/',    views.income_list,     name='income_list'),
 
-    # ── Expense CRUD ──────────────────────────────────────────────────────
-    path('list/',             views.get_expenses,    name='expense-list'),  # viewer+
-    path('add/',              views.create_expense,  name='expense-add'),   # admin
-    path('edit/<int:pk>/',    views.edit_expense,    name='expense-edit'),  # admin
-    path('delete/<int:pk>/',  views.delete_expense,  name='expense-delete'),# admin
+    # Expense CRUD
+    path('list/',             views.get_expenses,    name='expense-list'),
+    path('add/',              views.create_expense,  name='expense-add'),
+    path('edit/<int:pk>/',    views.edit_expense,    name='expense-edit'),
+    path('delete/<int:pk>/',  views.delete_expense,  name='expense-delete'),
 
-    # ── Analytics ─────────────────────────────────────────────────────────
-    path('ai-insights/', views.ai_insights, name='ai-insights'),  # analyst+
+    # Analytics
+    path('ai-insights/', views.ai_insights, name='ai-insights'),
 
-    # ── User Management API (admin only, except /me/) ─────────────────────
+    # User Management API
     path('api/users/',           user_views.list_users,      name='user-list'),
     path('api/users/me/',        user_views.my_profile,      name='user-me'),
     path('api/users/create/',    user_views.create_user_api, name='user-create'),
